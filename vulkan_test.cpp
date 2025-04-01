@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <vector>
 #include <cstring> //strcmp
+#include <map> //multimap
+#include <optional>
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -57,6 +59,16 @@ private:
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
 	
+	
+	struct QueueFamilyIndices {
+		std::optional<uint32_t> graphicsFamily;
+		
+		bool isComplete(){
+			bool complete = graphicsFamily.has_value();
+			return complete;
+		}
+	};
+	
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -78,6 +90,7 @@ private:
     void initVulkan() {
 		createInstance();
 		setupDebugMessenger();
+		pickPhysicalDevice();
     }
 	
 	void createInstance() {
@@ -212,6 +225,97 @@ private:
 		createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 		createInfo.pfnUserCallback = debugCallback;
 		createInfo.pUserData = this;
+	}
+	
+	VkPhysicalDevice pickPhysicalDevice() {
+		uint32_t deviceCount;
+		VkResult result = vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+		std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
+		result = vkEnumeratePhysicalDevices(instance, &deviceCount, physicalDevices.data());
+		
+		std::cout << "Physical Devices found:\n";
+		for (const auto& device : physicalDevices) {
+			VkPhysicalDeviceProperties properties{};
+			vkGetPhysicalDeviceProperties(device, &properties);
+			std::cout << '\t' << properties.deviceName << '\n';			
+		}
+		
+		VkPhysicalDevice picked{};
+		std::multimap<int32_t, VkPhysicalDevice> scores = rateDevices(physicalDevices);
+		if (scores.rbegin()->first > 0) {
+			picked = scores.rbegin()->second;
+		} else {
+			throw std::runtime_error("no suitable GPU found.");
+		}
+		
+		return picked;
+		
+	}
+	
+	std::multimap<int32_t, VkPhysicalDevice> rateDevices(std::vector<VkPhysicalDevice> devices) {
+		std::multimap<int32_t, VkPhysicalDevice> scores{};
+		for (const auto& device : devices){
+			int32_t score = rateDevice(device);
+			std::pair<int32_t, VkPhysicalDevice> entry{score, device};
+			scores.insert(entry);
+		}
+		return scores;
+	}
+	
+	int32_t rateDevice(const VkPhysicalDevice& device) {
+		int32_t score = 0;
+		VkPhysicalDeviceProperties properties;
+		vkGetPhysicalDeviceProperties(device, &properties);
+		VkPhysicalDeviceFeatures features;
+		vkGetPhysicalDeviceFeatures(device, &features);
+		
+		if (!features.geometryShader) return 0; //geometryShader is necessary
+		QueueFamilyIndices indices = findQueueFamilies(device);
+		if (!indices.isComplete()) return 0;
+		
+		switch(properties.deviceType) {
+			break;case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: {
+				score += 30;
+			} 
+			break;case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: {
+				score += 100;
+			}
+			break;case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: {
+				score += 5;
+			}
+			break;case VK_PHYSICAL_DEVICE_TYPE_CPU: {
+				score += 10;
+			}
+			break;default:{}
+		}
+		
+		score += properties.limits.maxImageDimension2D/128;
+		
+		std::cout << properties.deviceName << " : " << score << '\n';
+		
+		return score;
+	} 
+	
+	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+		QueueFamilyIndices indices;
+		uint32_t count;
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &count, nullptr);
+		std::vector<VkQueueFamilyProperties> queueFamilies{count};
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &count, queueFamilies.data());
+				
+		int32_t i = 0;
+		for (const auto& properties : queueFamilies) {
+			if (properties.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+				indices.graphicsFamily = i;				
+			}
+			if (indices.isComplete()) {
+				break;
+			}
+			++i;
+		}
+		
+		
+		return indices;
 	}
 	
 
