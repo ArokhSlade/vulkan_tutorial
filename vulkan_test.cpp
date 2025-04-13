@@ -419,8 +419,8 @@ private:
 			.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0,
 			.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : 0,
 			
-			.enabledExtensionCount = 0, //NOTE(Gerald, 2025 04 13): later: VK_KHR_swapchain
-			.ppEnabledExtensionNames = nullptr,
+			.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size()),
+			.ppEnabledExtensionNames = deviceExtensions.data(),
 			.pEnabledFeatures = &deviceFeatures,
 		};
 		
