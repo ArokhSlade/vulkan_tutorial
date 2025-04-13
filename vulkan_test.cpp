@@ -22,6 +22,9 @@ const std::vector<const char*> validationLayers = {
 	const bool enableValidationLayers = true;
 #endif
 
+constexpr int NOT_UNDERSTOOD = 0;
+constexpr int DEPRECATED_AND_IGNORED = 0;
+
 VkResult createDebugUtilsMessengerEXT(
 	VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
 	const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pDebugMessenger) {
@@ -332,6 +335,19 @@ private:
 		queueCreateInfo.pQueuePriorities = &queuePriority;
 		
 		VkPhysicalDeviceFeatures deviceFeatures{}; //need nothing for now
+		
+		VkDeviceCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = NOT_UNDERSTOOD ;
+		createInfo.queueCreateInfoCount = 1;
+		createInfo.pQueueCreateInfos = &queueCreateInfo;
+		createInfo.enabledLayerCount = enableValidationLayers ? validationLayers.size() : 0;
+		createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : 0;
+		
+		createInfo.enabledExtensionCount = 0; //NOTE(Gerald, 2025 04 13): later: VK_KHR_swapchain
+		createInfo.ppEnabledExtensions = nullptr;
+		pEnabledFeatures = &deviceFeatures;
 	}
 	
 
