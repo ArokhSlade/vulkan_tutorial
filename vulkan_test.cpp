@@ -361,13 +361,12 @@ private:
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
 		queueCreateInfos.reserve(uniqueQueueFamilies.size());
 		
+		float queuePriority = 1.0f;
 		for(const auto& index : uniqueQueueFamilies) {
 			VkDeviceQueueCreateInfo queueCreateInfo{};
 			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-			queueCreateInfo.queueFamilyIndex = index;
-			
+			queueCreateInfo.queueFamilyIndex = index;			
 			queueCreateInfo.queueCount = 1;
-			float queuePriority = 1.0f;
 			queueCreateInfo.pQueuePriorities = &queuePriority;
 			
 			queueCreateInfos.push_back(queueCreateInfo);
