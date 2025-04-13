@@ -8,6 +8,7 @@
 #include <cstring> //strcmp
 #include <map> //multimap
 #include <optional>
+#include <set>
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -70,7 +71,7 @@ private:
 	VkSurfaceKHR surface;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkDevice device;
-	VkQueue graphicsQueue;
+	VkQueue graphicsQueue, presentQueue;
 	
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;
@@ -355,22 +356,37 @@ private:
 	
 	void createLogicalDevice() {
 		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-		VkDeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-		queueCreateInfo.queueCount = 1;
 		
-		float queuePriority = 1.0f;
-		queueCreateInfo.pQueuePriorities = &queuePriority;
+		std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};		
+		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
+		queueCreateInfos.reserve(uniqueQueueFamilies.size());
+		std::cout << "uniqueQueueFamilies.size(): " << uniqueQueueFamilies.size() << std::endl;
+		std::cout << "queueCreateInfos.size(): " << queueCreateInfos.size() << std::endl;
+		std::cout << "queueCreateInfos.capacity(): " << queueCreateInfos.capacity() << std::endl;
+		
+		for(const auto& index : uniqueQueueFamilies) {
+			std::cout << "queue family index: " << index << std::endl;
+			VkDeviceQueueCreateInfo queueCreateInfo{};
+			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			queueCreateInfo.queueFamilyIndex = index;
+			
+			queueCreateInfo.queueCount = 1;
+			float queuePriority = 1.0f;
+			queueCreateInfo.pQueuePriorities = &queuePriority;
+			
+			queueCreateInfos.push_back(queueCreateInfo);
+		}
 		
 		VkPhysicalDeviceFeatures deviceFeatures{}; //need nothing for now
+		std::cout << "uniqueQueueFamilies.size(): " << uniqueQueueFamilies.size() << std::endl;
+		std::cout << "queueCreateInfos.size(): " << queueCreateInfos.size() << std::endl;
 		
 		VkDeviceCreateInfo createInfo {
 			.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 			.pNext = nullptr,
 			.flags = NOT_UNDERSTOOD,
-			.queueCreateInfoCount = 1,
-			.pQueueCreateInfos = &queueCreateInfo,
+			.queueCreateInfoCount = queueCreateInfos.size(),
+			.pQueueCreateInfos = queueCreateInfos.data(),
 			.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0,
 			.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : 0,
 			
@@ -379,10 +395,12 @@ private:
 			.pEnabledFeatures = &deviceFeatures,
 		};
 		
+		std::cout << "try: create device\n";
 		VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device);
 		if (result != VK_SUCCESS) {
 			throw std::runtime_error("failed to create logical device");
 		}
+		std::cout << "success: create device\n";
 		
 		vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
 	}
