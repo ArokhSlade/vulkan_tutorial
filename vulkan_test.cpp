@@ -58,6 +58,7 @@ private:
 	GLFWwindow *window;
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
+	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	
 	
 	struct QueueFamilyIndices {
@@ -227,7 +228,7 @@ private:
 		createInfo.pUserData = this;
 	}
 	
-	VkPhysicalDevice pickPhysicalDevice() {
+	void pickPhysicalDevice() {
 		uint32_t deviceCount;
 		VkResult result = vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 		std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
@@ -248,8 +249,9 @@ private:
 			throw std::runtime_error("no suitable GPU found.");
 		}
 		
-		return picked;
+		physicalDevice = picked;
 		
+		return;
 	}
 	
 	std::multimap<int32_t, VkPhysicalDevice> rateDevices(std::vector<VkPhysicalDevice> devices) {
