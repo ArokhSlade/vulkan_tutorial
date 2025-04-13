@@ -397,8 +397,19 @@ private:
 				return availableFormat;
 			}
 		}
-		return availableFormats[0];
+		return availableFormats[0]; // happy with whatever we get
 	}
+	
+	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+		constexpr VkPresentModeKHR preferredPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+		for (const auto& availablePresentMode : availablePresentModes) {
+			if (availablePresentMode == preferredPresentMode) {
+				return availablePresentMode;
+			}
+		}
+		return VK_PRESENT_MODE_FIFO_KHR; // guaranteed to exist
+	}
+	
 	
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
 		QueueFamilyIndices indices;
