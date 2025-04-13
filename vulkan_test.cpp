@@ -16,14 +16,17 @@ const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
 };
 
+
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;
 #else
 	const bool enableValidationLayers = true;
 #endif
 
+
 constexpr int NOT_UNDERSTOOD = 0;
 constexpr int DEPRECATED_AND_IGNORED = 0;
+
 
 VkResult createDebugUtilsMessengerEXT(
 	VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
@@ -47,8 +50,11 @@ void destroyDebugUtilsMessengerEXT(VkInstance instance,
 	func(instance, debugMessenger, pAllocator);
 }
 
+
 class HelloTriangleApplication {
+	
 public:
+
     void run() {
 		initWindow();
         initVulkan();
@@ -61,6 +67,7 @@ private:
 	GLFWwindow *window;
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
+	VkSurfaceKHR surface;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkDevice device;
 	VkQueue graphicsQueue;
@@ -95,6 +102,7 @@ private:
     void initVulkan() {
 		createInstance();
 		setupDebugMessenger();
+		createSurface();
 		pickPhysicalDevice();
 		createLogicalDevice();
     }
@@ -231,6 +239,15 @@ private:
 		createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 		createInfo.pfnUserCallback = debugCallback;
 		createInfo.pUserData = this;
+	}
+	
+	void createSurface() {
+		VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+		if (result != VK_SUCCESS) {
+			throw std::runtime_error("failed to create window surface");
+		}
+		
+		return;
 	}
 	
 	void pickPhysicalDevice() {
@@ -371,6 +388,7 @@ private:
 		if (enableValidationLayers) {
 			destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
 		}
+		vkDestroySurfaceKHR(instance, surface, nullptr);
 		vkDestroyInstance(instance, nullptr);
 		glfwDestroyWindow(window);		
 		glfwTerminate();
