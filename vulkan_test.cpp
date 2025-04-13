@@ -10,6 +10,15 @@
 #include <optional>
 #include <set>
 
+#ifdef NDEBUG
+	const bool enableValidationLayers = false;
+#else
+	const bool enableValidationLayers = true;
+#endif
+
+constexpr int NOT_UNDERSTOOD = 0;
+constexpr int DEPRECATED_AND_IGNORED = 0;
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
@@ -20,17 +29,6 @@ const std::vector<const char*> validationLayers = {
 const std::vector<const char*> deviceExtensions = {
 	"VK_KHR_swapchain", //can also use macro: VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
-
-
-#ifdef NDEBUG
-	const bool enableValidationLayers = false;
-#else
-	const bool enableValidationLayers = true;
-#endif
-
-
-constexpr int NOT_UNDERSTOOD = 0;
-constexpr int DEPRECATED_AND_IGNORED = 0;
 
 
 VkResult createDebugUtilsMessengerEXT(
@@ -85,6 +83,12 @@ private:
 			bool complete = graphicsFamily.has_value() && presentFamily.has_value();
 			return complete;
 		}
+	};
+	
+	struct SwapChainSupportDetails {
+		VkSurfaceCapabilitiesKHR capabilities;
+		std::vector<VkSurfaceFormatKHR> formats;
+		std::vector<VkPresentModeKHR> presentModes;
 	};
 	
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -326,11 +330,14 @@ private:
 	} 
 	
 	bool isDeviceSuitable(const VkPhysicalDevice& device, const VkPhysicalDeviceFeatures& features) {
-		if (!features.geometryShader) return false; //geometryShader is necessary
+		if (!features.geometryShader) return false; // geometry shader is necessary
 		QueueFamilyIndices indices = findQueueFamilies(device);
 		if (!indices.isComplete()) return false;
 		
-		if (!deviceSupportsRequiredExtensions(device)) return false;
+		if (!deviceSupportsRequiredExtensions(device)) return false; // verifies swap chain support
+		
+		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+		bool swapChainIsAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 		
 		return true;
 	}
@@ -357,6 +364,29 @@ private:
 			}
 		}
 		return false;
+	}
+	
+	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) {
+		SwapChainSupportDetails details{};
+		
+		VkSurfaceCapabilitiesKHR capabilities;
+		VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+		
+		uint32_t formatCount = 0;		
+		result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+		if (formatCount != 0) {
+			details.formats.resize(formatCount);
+			result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+		}
+		
+		uint32_t modeCount = 0;
+		result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &modeCount, nullptr);
+		if (modeCount != 0) {
+			details.presentModes.resize(modeCount);
+			result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &modeCount, details.presentModes.data());
+		}
+		
+		return details;
 	}
 	
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
