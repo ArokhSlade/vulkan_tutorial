@@ -77,6 +77,9 @@ private:
 	VkDevice device;
 	VkQueue graphicsQueue, presentQueue;
 	VkSwapchainKHR swapchain;
+	std::vector<VkImage> swapchainImages;
+	VkFormat swapchainImageFormat;
+	VkExtent2D swapchainImageExtent;
 	
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;
@@ -448,7 +451,7 @@ private:
 	void createSwapchain() {
 		SwapchainSupportDetails swapchainSupport = querySwapchainSupport(physicalDevice);
 		
-		VkSurfaceFormatKHR format = chooseSwapSurfaceFormat(swapchainSupport.formats);
+		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapchainSupport.formats);
 		VkPresentModeKHR presentMode = chooseSwapPresentMode(swapchainSupport.presentModes);
 		VkExtent2D extent = chooseSwapExtent(swapchainSupport.capabilities);
 		
@@ -465,8 +468,8 @@ private:
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		createInfo.surface = surface;
 		createInfo.minImageCount = imageCount;
-        createInfo.imageFormat = format.format;
-        createInfo.imageColorSpace = format.colorSpace;
+        createInfo.imageFormat = surfaceFormat.format;
+        createInfo.imageColorSpace = surfaceFormat.colorSpace;
         createInfo.imageExtent = extent;
         createInfo.imageArrayLayers = 1; //"This is always 1 unless you are developing a stereoscopic 3D application"
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // render directly to images (no post processing)
@@ -490,6 +493,13 @@ private:
 		if (result != VK_SUCCESS) {
 			throw std::runtime_error("failed creating swap chain");
 		}
+				
+		vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
+		swapchainImages.resize(imageCount);
+		vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
+		
+		swapchainImageExtent = extent;
+		swapchainImageFormat = surfaceFormat.format;
 	}
 	
 	SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device) {
