@@ -14,7 +14,11 @@ const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
 const std::vector<const char*> validationLayers = {
-	"VK_LAYER_KHRONOS_validation"
+	"VK_LAYER_KHRONOS_validation",
+};
+
+const std::vector<const char*> deviceExtensions = {
+	"VK_KHR_swapchain", //can also use macro: VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
 
@@ -296,9 +300,7 @@ private:
 		VkPhysicalDeviceFeatures features;
 		vkGetPhysicalDeviceFeatures(device, &features);
 		
-		if (!features.geometryShader) return 0; //geometryShader is necessary
-		QueueFamilyIndices indices = findQueueFamilies(device);
-		if (!indices.isComplete()) return 0;
+		if (!isDeviceSuitable(device, features)) return false;
 		
 		switch(properties.deviceType) {
 			break;case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: {
@@ -322,6 +324,41 @@ private:
 		
 		return score;
 	} 
+	
+	bool isDeviceSuitable(const VkPhysicalDevice& device, const VkPhysicalDeviceFeatures& features) {
+		if (!features.geometryShader) return false; //geometryShader is necessary
+		QueueFamilyIndices indices = findQueueFamilies(device);
+		if (!indices.isComplete()) return false;
+		
+		if (!deviceSupportsRequiredExtensions(device)) return false;
+		
+		return true;
+	}
+	
+	bool deviceSupportsRequiredExtensions(const VkPhysicalDevice& device) {
+		
+		uint32_t extensionCount;
+		VkResult result = vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+		std::vector<VkExtensionProperties> supportedExtensions(extensionCount);
+		result = vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, supportedExtensions.data());
+		
+		for (const auto& requiredExtension : deviceExtensions) {
+			if (!deviceSupportsExtension(requiredExtension, supportedExtensions)) return false;
+		}
+		return true;
+	}
+	
+	bool deviceSupportsExtension(const char* extension, std::vector<VkExtensionProperties>& supportedExtensions) {
+		
+		for (int i = 0 ; i < supportedExtensions.size() ; ++i) {
+			const auto& supportedExtension = supportedExtensions.data()[i].extensionName;
+			if (0 == strcmp(supportedExtension, extension)) {
+				std::cout << "success: device supports: " << extension << std::endl;
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
 		QueueFamilyIndices indices;
