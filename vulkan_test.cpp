@@ -74,9 +74,10 @@ private:
 	
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;
+		std::optional<uint32_t> presentFamily;
 		
 		bool isComplete(){
-			bool complete = graphicsFamily.has_value();
+			bool complete = graphicsFamily.has_value() && presentFamily.has_value();
 			return complete;
 		}
 	};
@@ -287,6 +288,7 @@ private:
 	}
 	
 	int32_t rateDevice(const VkPhysicalDevice& device) {
+		//TODO(Gerald, 2025 04 12): add logic to explicitly prefer a physical device that supports drawing and presentation in the same queue
 		int32_t score = 0;
 		VkPhysicalDeviceProperties properties;
 		vkGetPhysicalDeviceProperties(device, &properties);
@@ -332,6 +334,15 @@ private:
 			if (properties.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 				indices.graphicsFamily = i;				
 			}
+			VkBool32 supportsSurface{};
+			VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR( device, i, surface, &supportsSurface );
+			if (result != VK_SUCCESS) {
+				throw std::runtime_error("could not query surface support");
+			}
+			if (supportsSurface) {
+				indices.presentFamily = i;
+			}
+			
 			if (indices.isComplete()) {
 				break;
 			}
