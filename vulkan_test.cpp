@@ -63,6 +63,7 @@ private:
 	VkDebugUtilsMessengerEXT debugMessenger;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkDevice device;
+	VkQueue graphicsQueue;
 	
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;
@@ -354,6 +355,8 @@ private:
 		if (result != VK_SUCCESS) {
 			throw std::runtime_error("failed to create logical device");
 		}
+		
+		vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
 	}
 	
 
