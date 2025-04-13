@@ -390,8 +390,8 @@ private:
 	}
 	
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
-		constexpr auto preferredFormat = VK_FORMAT_B8G8R8A8_SRGB;
-		constexpr auto preferredColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+		constexpr VkFormat preferredFormat = VK_FORMAT_B8G8R8A8_SRGB;
+		constexpr VkColorSpaceKHR preferredColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 		for (const auto& availableFormat : availableFormats) {
 			if (availableFormat.format == preferredFormat && availableFormat.colorSpace == preferredColorSpace) {
 				return availableFormat;
