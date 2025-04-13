@@ -336,18 +336,24 @@ private:
 		
 		VkPhysicalDeviceFeatures deviceFeatures{}; //need nothing for now
 		
-		VkDeviceCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		createInfo.pNext = nullptr;
-		createInfo.flags = NOT_UNDERSTOOD ;
-		createInfo.queueCreateInfoCount = 1;
-		createInfo.pQueueCreateInfos = &queueCreateInfo;
-		createInfo.enabledLayerCount = enableValidationLayers ? validationLayers.size() : 0;
-		createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : 0;
+		VkDeviceCreateInfo createInfo {
+			.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = NOT_UNDERSTOOD,
+			.queueCreateInfoCount = 1,
+			.pQueueCreateInfos = &queueCreateInfo,
+			.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0,
+			.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : 0,
+			
+			.enabledExtensionCount = 0, //NOTE(Gerald, 2025 04 13): later: VK_KHR_swapchain
+			.ppEnabledExtensionNames = nullptr,
+			.pEnabledFeatures = &deviceFeatures,
+		};
 		
-		createInfo.enabledExtensionCount = 0; //NOTE(Gerald, 2025 04 13): later: VK_KHR_swapchain
-		createInfo.ppEnabledExtensions = nullptr;
-		pEnabledFeatures = &deviceFeatures;
+		VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device);
+		if (result != VK_SUCCESS) {
+			throw std::runtime_error("failed to create logical device");
+		}
 	}
 	
 
@@ -358,6 +364,7 @@ private:
     }
 
     void cleanup() {
+		vkDestroyDevice(device, nullptr);
 		if (enableValidationLayers) {
 			destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
 		}
