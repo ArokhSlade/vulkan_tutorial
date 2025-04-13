@@ -350,9 +350,8 @@ private:
 	
 	bool deviceSupportsExtension(const char* extension, std::vector<VkExtensionProperties>& supportedExtensions) {
 		
-		for (int i = 0 ; i < supportedExtensions.size() ; ++i) {
-			const auto& supportedExtension = supportedExtensions.data()[i].extensionName;
-			if (0 == strcmp(supportedExtension, extension)) {
+		for (const auto& supportedExtension : supportedExtensions) {			
+			if (0 == strcmp(supportedExtension.extensionName, extension)) {
 				std::cout << "success: device supports: " << extension << std::endl;
 				return true;
 			}
