@@ -5,10 +5,12 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <vector>
-#include <cstring> //strcmp
-#include <map> //multimap
+#include <cstring> // strcmp
+#include <map> // multimap
 #include <optional>
 #include <set>
+#include <limits> // std::numeric_limits
+#include <algorithm> // std::clamp
 
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;
@@ -408,6 +410,26 @@ private:
 			}
 		}
 		return VK_PRESENT_MODE_FIFO_KHR; // guaranteed to exist
+	}
+	
+	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+			return capabilities.currentExtent;
+		} else {
+			int width, height;
+			glfwGetFramebufferSize(window, &width, &height);
+			
+			VkExtent2D actualExtent = {
+				static_cast<uint32_t>(width),
+				static_cast<uint32_t>(height),
+			};
+			
+			actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+			actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+			
+			return actualExtent;
+		}
+		
 	}
 	
 	
